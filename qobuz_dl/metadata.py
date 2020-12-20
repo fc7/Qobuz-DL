@@ -1,9 +1,30 @@
 import os
+import logging
 
 from mutagen.flac import FLAC, Picture
 from mutagen.mp3 import EasyMP3
 
+logger = logging.getLogger(__name__)
 
+
+def get_title(track_dict):
+    try:
+        title = (
+            ("{} ({})".format(track_dict["title"], track_dict["version"]))
+            if track_dict["version"]
+            else track_dict["title"]
+        )
+    except KeyError:
+        title = track_dict["title"]
+
+    # for classical works
+    if track_dict.get("work"):
+        title = "{}: {}".format(track_dict["work"], title)
+
+    return title
+
+
+# Use KeyError catching instead of dict.get to avoid empty tags
 def tag_flac(filename, root_dir, final_name, d, album, istrack=True, em_image=False):
     """
     Tag a FLAC file
@@ -18,18 +39,10 @@ def tag_flac(filename, root_dir, final_name, d, album, istrack=True, em_image=Fa
     """
     audio = FLAC(filename)
 
-    try:
-        audio["TITLE"] = "{} ({})".format(d["title"], d["version"])
-    except KeyError:
-        audio["TITLE"] = d["title"]
+    audio["TITLE"] = get_title(d)
 
     audio["TRACKNUMBER"] = str(d["track_number"])  # TRACK NUMBER
-
-    try:
-        if d["work"]: # not none
-            audio["WORK"] = d["work"]
-    except (KeyError, ValueError):
-        pass
+    audio["DISCNUMBER"] = str(d["media_number"])
 
     try:
         audio["COMPOSER"] = d["composer"]["name"]  # COMPOSER
@@ -49,26 +62,30 @@ def tag_flac(filename, root_dir, final_name, d, album, istrack=True, em_image=Fa
         audio["ALBUMARTIST"] = d["album"]["artist"]["name"]  # ALBUM ARTIST
         audio["TRACKTOTAL"] = str(d["album"]["tracks_count"])  # TRACK TOTAL
         audio["ALBUM"] = d["album"]["title"]  # ALBUM TITLE
-        audio["YEAR"] = d["album"]["release_date_original"].split("-")[0]
+        audio["DATE"] = d["album"]["release_date_original"].split("-")[0]
     else:
         audio["GENRE"] = ", ".join(album["genres_list"])  # GENRE
         audio["ALBUMARTIST"] = album["artist"]["name"]  # ALBUM ARTIST
         audio["TRACKTOTAL"] = str(album["tracks_count"])  # TRACK TOTAL
         audio["ALBUM"] = album["title"]  # ALBUM TITLE
-        audio["YEAR"] = album["release_date_original"].split("-")[0]  # YEAR
+        audio["DATE"] = album["release_date_original"].split("-")[0]
 
-    emb_image = os.path.join(root_dir, "cover.jpg")
-    if os.path.isfile(emb_image) and em_image:
+    if em_image:
+        emb_image = os.path.join(root_dir, "cover.jpg")
+        multi_emb_image = os.path.join(
+            os.path.abspath(os.path.join(root_dir, os.pardir)), "cover.jpg"
+        )
+        cover_image = emb_image if os.path.isfile(emb_image) else multi_emb_image
         try:
             image = Picture()
             image.type = 3
             image.mime = "image/jpeg"
             image.desc = "cover"
-            with open(emb_image, "rb") as img:
+            with open(cover_image, "rb") as img:
                 image.data = img.read()
             audio.add_picture(image)
         except Exception as e:
-            print("Error embedding image: " + str(e))
+            logger.error(f"Error embedding image: {e}", exc_info=True)
 
     audio.save()
     os.rename(filename, final_name)
@@ -88,18 +105,9 @@ def tag_mp3(filename, root_dir, final_name, d, album, istrack=True, em_image=Fal
     # TODO: add embedded cover art support for mp3
     audio = EasyMP3(filename)
 
-    try:
-        audio["title"] = "{} ({})".format(d["title"], d["version"])
-    except KeyError:
-        audio["title"] = d["title"]
+    audio["title"] = get_title(d)
 
     audio["tracknumber"] = str(d["track_number"])
-
-    try:
-        if d["work"]: # not none
-            audio["discsubtitle"] = d["work"]
-    except (KeyError, ValueError):
-        pass
     try:
         audio["composer"] = d["composer"]["name"]
     except KeyError:
@@ -118,7 +126,7 @@ def tag_mp3(filename, root_dir, final_name, d, album, istrack=True, em_image=Fal
         audio["album"] = d["album"]["title"]  # ALBUM TITLE
         audio["date"] = d["album"]["release_date_original"].split("-")[0]
     else:
-        audio["GENRE"] = ", ".join(album["genres_list"])  # GENRE
+        audio["genre"] = ", ".join(album["genres_list"])  # GENRE
         audio["albumartist"] = album["artist"]["name"]  # ALBUM ARTIST
         audio["album"] = album["title"]  # ALBUM TITLE
         audio["date"] = album["release_date_original"].split("-")[0]  # YEAR
