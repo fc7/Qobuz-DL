@@ -4,6 +4,7 @@ import configparser
 import os
 import re
 import sys
+import json
 
 from pick import pick
 from pathvalidate import sanitize_filename
@@ -233,6 +234,41 @@ def download_lucky_mode(Qz, mode, query, limit, path, quality, embed_art=False):
     except (KeyError, IndexError):
         sys.exit("Invalid mode: " + str(mode))
 
+def _download_favorites_by_type(client, type):
+    offset = 0
+    limit = 500
+    _call = client.get_favorite_albums
+    if type == 'tracks':
+        _call = client.get_favorite_tracks
+    if type == 'artists':
+        _call = client.get_favorite_artists
+    response = _call(offset,limit)
+
+    total = response[type]['total']
+
+    while len(response[type]['items']) < total:
+        offset += limit
+        tmp = client.get_favorite_albums(offset,limit)
+        response[type]['items'] = response[type]['items'] + tmp[type]['items']
+
+    if len(response[type]['items']) != total:
+        print('WARN: Number of '+type+' in concatenated response (' 
+            + len(response[type]['items']) 
+            + ') is different from the expected total (' 
+            + total +')'
+            )
+    return response
+
+def download_favorites(client, outfile):
+    response = _download_favorites_by_type(client, 'albums')
+    response['tracks'] = _download_favorites_by_type(client, 'tracks')['tracks']
+    response['artists'] = _download_favorites_by_type(client, 'artists')['artists']
+
+    with open(outfile, 'w') as out:
+        json.dump(response, out)
+
+    print('Favorites written to ' + outfile)
+
 
 def main():
     if not os.path.isdir(CONFIG_PATH) or not os.path.isfile(CONFIG_FILE):
@@ -301,6 +337,14 @@ def main():
                 )
             else:
                 handle_urls(url, Qz, directory, arguments.quality, arguments.embed_art)
+    if arguments.command == "album":
+        for id in arguments.ID:
+            downloader.download_id_by_type(Qz, id, directory, arguments.quality, True, arguments.embed_art)
+    if arguments.command == "track":
+        for id in arguments.ID:
+            downloader.download_id_by_type(Qz, id, directory, arguments.quality, False, arguments.embed_art)
+    if arguments.command == "favs":
+        download_favorites(Qz, directory + "/" + arguments.file)
     else:
         download_lucky_mode(
             Qz,
