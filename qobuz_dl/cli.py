@@ -35,7 +35,7 @@ def reset_config(config_file):
     ).decode()
     config["DEFAULT"]["default_folder"] = (
         input(
-            f"{CYAN}Folder for downloads (leave empy for default 'Qobuz Downloads')\n-{DF} "
+            f"{CYAN}Folder for downloads (leave empty for default 'Qobuz Downloads')\n-{DF} "
         )
         or "Qobuz Downloads"
     )
@@ -43,7 +43,7 @@ def reset_config(config_file):
         input(
             f"{CYAN}Download quality (5, 6, 7, 27) "
             "[320, LOSSLESS, 24B <96KHZ, 24B >96KHZ]"
-            f"\n(leave empy for default '6')\n-{DF} "
+            f"\n(leave empty for default '6')\n-{DF} "
         )
         or "6"
     )
