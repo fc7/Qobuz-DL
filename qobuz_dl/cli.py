@@ -89,7 +89,7 @@ def _download_favorites_by_type(client, type):
 
     while len(response[type]['items']) < total:
         offset += limit
-        tmp = client.get_favorite_albums(offset,limit)
+        tmp = _call(offset,limit)
         response[type]['items'] = response[type]['items'] + tmp[type]['items']
 
     if len(response[type]['items']) != total:
