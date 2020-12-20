@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
-import sys
 import os
+import platform
 
 pkg_name = "qobuz-dl"
 
@@ -11,7 +11,7 @@ def read_file(fname):
 
 
 requirements = read_file("requirements.txt").strip().split()
-if os.name == "nt" or "win" in sys.platform:
+if os.name == "nt" or platform.system() == "Windows":
     requirements.append("windows-curses")
 
 setup(
