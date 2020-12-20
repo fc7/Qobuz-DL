@@ -75,35 +75,8 @@ def remove_leftovers(directory):
         except:  # noqa
             pass
 
-def _download_favorites_by_type(client, type):
-    offset = 0
-    limit = 500
-    _call = client.get_favorite_albums
-    if type == 'tracks':
-        _call = client.get_favorite_tracks
-    if type == 'artists':
-        _call = client.get_favorite_artists
-    response = _call(offset,limit)
-
-    total = response[type]['total']
-
-    while len(response[type]['items']) < total:
-        offset += limit
-        tmp = _call(offset,limit)
-        response[type]['items'] = response[type]['items'] + tmp[type]['items']
-
-    if len(response[type]['items']) != total:
-        print('WARN: Number of '+type+' in concatenated response (' 
-            + len(response[type]['items']) 
-            + ') is different from the expected total (' 
-            + total +')'
-            )
-    return response
-
 def download_favorites(client, outfile):
-    response = _download_favorites_by_type(client, 'albums')
-    response['tracks'] = _download_favorites_by_type(client, 'tracks')['tracks']
-    response['artists'] = _download_favorites_by_type(client, 'artists')['artists']
+    response = client.get_all_favorites()
 
     with open(outfile, 'w') as out:
         json.dump(response, out)

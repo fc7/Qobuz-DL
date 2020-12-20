@@ -202,6 +202,37 @@ class QobuzDL:
             self.download_list_of_urls(results)
 
         return results
+    
+    def get_favorites_by_type(self, type):
+        offset = 0
+        limit = 500
+        _call = self.client.get_favorite_albums
+        if type == 'tracks':
+            _call = self.client.get_favorite_tracks
+        if type == 'artists':
+            _call = self.client.get_favorite_artists
+        response = _call(offset,limit)
+
+        total = response[type]['total']
+
+        while len(response[type]['items']) < total:
+            offset += limit
+            tmp = _call(offset,limit)
+            response[type]['items'] = response[type]['items'] + tmp[type]['items']
+
+        if len(response[type]['items']) != total:
+            print('WARN: Number of '+type+' in concatenated response (' 
+                + len(response[type]['items']) 
+                + ') is different from the expected total (' 
+                + total +')'
+                )
+        return response
+    
+    def get_all_favorites(self):
+        response = self.get_favorites_by_type('albums')
+        response['tracks'] = self.get_favorites_by_type('tracks')['tracks']
+        response['artists'] = self.get_favorites_by_type('artists')['artists']
+        return response
 
     def format_duration(self, duration):
         return time.strftime("%H:%M:%S", time.gmtime(duration))
