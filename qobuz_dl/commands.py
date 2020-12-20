@@ -44,7 +44,7 @@ def dl_args(subparsers):
     download = subparsers.add_parser(
         "dl",
         description="Download by album/track/artist/label/playlist/last.fm-playlist URL.",
-        help="input mode",
+        help="download by URL",
     )
     download.add_argument(
         "SOURCE",
@@ -56,9 +56,9 @@ def dl_args(subparsers):
 
 def album_args(subparsers):
     album = subparsers.add_parser(
-        "album",
-        description="Download album by ID.",
-        help="ID mode",
+        "dla",
+        description="Download album(s) by ID.",
+        help="download album(s) by ID",
     )
     album.add_argument(
         "ID",
@@ -70,9 +70,9 @@ def album_args(subparsers):
 
 def track_args(subparsers):
     track = subparsers.add_parser(
-        "track",
-        description="Download track by ID.",
-        help="ID mode",
+        "dlt",
+        description="Download track(s) by ID.",
+        help="download track(s) by ID",
     )
     track.add_argument(
         "ID",
@@ -165,13 +165,13 @@ def qobuz_dl_args(
 
     interactive = fun_args(subparsers, default_limit)
     download = dl_args(subparsers)
-    lucky = lucky_args(subparsers)
     album = album_args(subparsers)
     track = track_args(subparsers)
+    lucky = lucky_args(subparsers)
     favorites = favorites_args(subparsers)
     [
         add_common_arg(i, default_folder, default_quality)
-        for i in (interactive, download, lucky, album, track, favorites)
+        for i in (interactive, download, album, track, lucky, favorites)
     ]
 
     return parser
