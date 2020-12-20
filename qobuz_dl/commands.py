@@ -8,17 +8,11 @@ def fun_args(subparsers, default_limit):
         help="interactive mode",
     )
     interactive.add_argument(
-        "-a",
-        "--albums-only",
-        action="store_true",
-        help="enable albums-only search",
-    )
-    interactive.add_argument(
         "-l",
         "--limit",
         metavar="int",
         default=default_limit,
-        help="limit of search results by type (default: 10)",
+        help="limit of search results (default: 20)",
     )
     return interactive
 
@@ -49,7 +43,7 @@ def lucky_args(subparsers):
 def dl_args(subparsers):
     download = subparsers.add_parser(
         "dl",
-        description="Download by album/track/artist/label/playlist URL.",
+        description="Download by album/track/artist/label/playlist/last.fm-playlist URL.",
         help="input mode",
     )
     download.add_argument(
@@ -104,14 +98,11 @@ def favorites_args(subparsers):
 
 def add_common_arg(custom_parser, default_folder, default_quality):
     custom_parser.add_argument(
-        "-e", "--embed-art", action="store_true", help="embed cover art into files"
-    )
-    custom_parser.add_argument(
         "-d",
         "--directory",
         metavar="PATH",
         default=default_folder,
-        help='directory for downloads (default: "{}")'.format(default_folder),
+        help=f'directory for downloads (default: "{default_folder}")',
     )
     custom_parser.add_argument(
         "-q",
@@ -120,13 +111,39 @@ def add_common_arg(custom_parser, default_folder, default_quality):
         default=default_quality,
         help=(
             'audio "quality" (5, 6, 7, 27)\n'
-            "[320, LOSSLESS, 24B <96KHZ, 24B >96KHZ] (default: 6)"
+            f"[320, LOSSLESS, 24B<=96KHZ, 24B>96KHZ] (default: {default_quality})"
         ),
+    )
+    custom_parser.add_argument(
+        "--albums-only",
+        action="store_true",
+        help=("don't download singles, EPs and VA releases"),
+    )
+    custom_parser.add_argument(
+        "--no-m3u",
+        action="store_true",
+        help="don't create .m3u files when downloading playlists",
+    )
+    custom_parser.add_argument(
+        "--no-fallback",
+        action="store_true",
+        help="disable quality fallback (skip releases not available in set quality)",
+    )
+    custom_parser.add_argument(
+        "-e", "--embed-art", action="store_true", help="embed cover art into files"
+    )
+    custom_parser.add_argument(
+        "--og-cover",
+        action="store_true",
+        help="download cover art in its original quality (bigger file)",
+    )
+    custom_parser.add_argument(
+        "--no-cover", action="store_true", help="don't download cover art"
     )
 
 
 def qobuz_dl_args(
-    default_quality=6, default_limit=10, default_folder="Qobuz Downloads"
+    default_quality=6, default_limit=20, default_folder="Qobuz Downloads"
 ):
     parser = argparse.ArgumentParser(
         prog="qobuz-dl",
